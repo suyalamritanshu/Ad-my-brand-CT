@@ -6,173 +6,234 @@ import Toast from "../../Components/Toast";
 import Loading from "../../Components/Loading";
 
 export default function Home() {
+  const initialState = {
+    user: {},
+    userList: [],
+    title: "",
+    desc: "",
+    showError: false,
+    success: false,
+    loading: false,
+    disabled: false,
+    titleError: false,
+    descError: false,
+    menuError: false,
+    error: false,
+  };
 
-  const [user, setUser] = useState({});
-  const [userList, setUserList] = useState([]);
-  const [title, setTitle] = useState("");
-  const [desc, setDesc] = useState("");
-  const [showError, setShowError] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [loading, setloading] = useState(false);
-  const [disabled, setDisabled] = useState(false);
-  const [titleError, setTitleError] = useState(false);
-  const [descError, setDescError] = useState(false);
-  const [menuError, setMenuError] = useState(false);
-  const [error, setError] = useState(false);
-  const [titleBorderColor, setTitleBorderColor] = useState("1px solid #ccc");
-  const [descBorderColor, setDescBorderColor] = useState("1px solid #ccc");
-  const [menuBorderColor, setMenuBorderColor] = useState("1px solid #ccc");
+  const [formState, setFormState] = useState(initialState);
 
-  const handleSelect = (item) => { setUser(item); setMenuBorderColor("1px solid #ccc") };
+  const borderColors = {
+    titleBorderColor: "1px solid #ccc",
+    descBorderColor: "1px solid #ccc",
+    menuBorderColor: "1px solid #ccc",
+  };
+
+  const [borderState, setBorderState] = useState(borderColors);
+
+  const handleSelect = (item) => {
+    setFormState({ ...formState, user: item });
+    setBorderState({ ...borderState, menuBorderColor: "1px solid #ccc", titleBorderColor: "1px solid #ccc", descBorderColor: "1px solid #ccc" });
+  };
+
+  const handleTitle = (item) =>{
+    setFormState({ ...formState, title: item, titleError: false }); 
+    setBorderState({ ...borderState, titleBorderColor: "1px solid #ccc"})
+  }
+
+  const handleDesc = (item) =>{
+    setFormState({ ...formState, desc: item, descError: false }); 
+    setBorderState({ ...borderState, descBorderColor: "1px solid #ccc"})
+  }
 
   const handleSubmit = () => {
-    setloading(true);
-    if (!Object.keys(user).length && !title.length && !desc.length) {
-      console.log("Error")
-      setMenuBorderColor("1px solid #ff0000");
-      setTitleBorderColor("1px solid #ff0000");
-      setDescBorderColor("1px solid #ff0000");
-      setShowError(true);
-      setloading(false);
-    }
-    else if (!Object.keys(user).length) {
-      setMenuBorderColor("1px solid #ff0000");
-      setMenuError(true);
-      setloading(false)
-    }
-    else if (!title.length) {
-      setTitleBorderColor("1px solid #ff0000");
-      setTitleError(true);
-      setloading(false)
-    }
-    else if (!desc.length) {
-      setDescBorderColor("1px solid #ff0000");
-      setDescError(true);
-      setloading(false)
-    }
+    setFormState({ ...formState, loading: true });
+    const { user, title, desc } = formState;
+    const { menuBorderColor, titleBorderColor, descBorderColor } = borderState;
 
-    else {
-      axios.post("https://jsonplaceholder.typicode.com/posts", {
-        userId: user.id,
-        title,
-        desc,
-      }).then(() => {
-        setloading(false);
-        setSuccess(true)
-        setUser({});
-        setTitle("");
-        setDesc("");
-      }).catch((error) => {
-        setloading(false);
-        setDisabled(true)
-        console.log(error);
-        setShowError(true);
-        showError(true)
+    if (!Object.keys(user).length && !title.length && !desc.length) {
+      setBorderState({
+        menuBorderColor: "1px solid #ff0000",
+        titleBorderColor: "1px solid #ff0000",
+        descBorderColor: "1px solid #ff0000",
       });
+      setFormState({ ...formState, showError: true, loading: false });
+    } else if (!Object.keys(user).length) {
+      setBorderState({ ...borderState, menuBorderColor: "1px solid #ff0000" });
+      setFormState({ ...formState, menuError: true, loading: false });
+    } else if (!title.length) {
+      setBorderState({ ...borderState, titleBorderColor: "1px solid #ff0000" });
+      setFormState({ ...formState, titleError: true, loading: false });
+    } else if (!desc.length) {
+      setBorderState({ ...borderState, descBorderColor: "1px solid #ff0000" });
+      setFormState({ ...formState, descError: true, loading: false });
+    } else {
+      axios
+        .post("https://jsonplaceholder.typicode.com/posts", {
+          userId: user.id,
+          title,
+          desc,
+        })
+        .then(() => {
+          setFormState({
+            ...initialState,
+            success: true,
+          });
+          setBorderState({
+            ...borderState,
+            menuBorderColor: "1px solid #ccc", titleBorderColor: "1px solid #ccc", descBorderColor: "1px solid #ccc"
+          })
+        })
+        .catch((error) => {
+          setFormState({
+            ...formState,
+            loading: false,
+            disabled: true,
+            error: true,
+            showError: true,
+          });
+          console.log(error);
+        });
     }
   };
 
   useEffect(() => {
-    setloading(true)
-    axios.get("https://jsonplaceholder.typicode.com/users").then(
-      (res) => {
-        setloading(false);
-        setUserList(res.data.map((item) => ({ id: item.id, name: item.name, lat: item.address.geo.lat, lng: item.address.geo.lng })))
-      }).catch((err) => {
-        setloading(false);
-        showError(true)
+    setFormState({ ...formState, loading: true });
+    axios
+      .get("https://jsonplaceholder.typicode.com/users")
+      .then((res) => {
+        setFormState({
+          ...formState,
+          loading: false,
+          userList: res.data.map((item) => ({
+            id: item.id,
+            name: item.name,
+            lat: item.address.geo.lat,
+            lng: item.address.geo.lng,
+          })),
+        });
+      })
+      .catch((err) => {
+        setFormState({
+          ...formState,
+          loading: false,
+          showError: true,
+        });
       });
   }, []);
+
   return (
     <div>
-
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexDirection: 'column', marginTop: '13rem'
-      }} >
-        <UsersComponent item={user} userList={userList} handleChange={handleSelect} showBorderColor={menuBorderColor} />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          marginTop: "13rem",
+        }}
+      >
+        <UsersComponent
+          item={formState.user}
+          userList={formState.userList}
+          handleChange={handleSelect}
+          showBorderColor={borderState.menuBorderColor}
+        />
 
         <div className="form-group">
-          <label htmlFor="title" style={{ display: 'block', marginBottom: '5px' }}>Title:</label>
+          <label htmlFor="title" style={{ display: "block", marginBottom: "5px" }}>
+            Title:
+          </label>
           <input
             type="text"
             id="title"
             name="title"
-            value={title}
-            onChange={(e) => { setTitle(e.target.value); setTitleBorderColor("1px solid #ccc") }}
+            value={formState.title}
+            onChange={(e) =>
+              handleTitle(e.target.value)
+            }
             required
-            style={{ width: '100%', padding: '8px', border: titleBorderColor, borderRadius: '4px' }}
+            style={{
+              width: "100%",
+              padding: "8px",
+              border: borderState.titleBorderColor,
+              borderRadius: "4px",
+            }}
           />
         </div>
 
         <div className="form-group">
-          <label htmlFor="desc" style={{ display: 'block', marginBottom: '5px', marginTop: "20px" }}>Description:</label>
+          <label htmlFor="desc" style={{ display: "block", marginBottom: "5px", marginTop: "20px" }}>
+            Description:
+          </label>
           <input
             id="desc"
             name="desc"
-            value={desc}
-            onChange={(e) => { setDesc(e.target.value); setDescBorderColor("1px solid #ccc") }}
+            value={formState.desc}
+            onChange={(e) =>
+              handleDesc(e.target.value)
+            }
             required
-            style={{ width: '100%', padding: '8px', border: descBorderColor, borderRadius: '4px' }}
+            style={{
+              width: "100%",
+              padding: "8px",
+              border: borderState.descBorderColor,
+              borderRadius: "4px",
+            }}
           />
         </div>
 
-        <div onClick={handleSubmit} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: "20px" }}>
-          <button id="submit_Btn" disabled={disabled} style={{ backgroundColor: '#007bff', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '4px', cursor: 'pointer', marginTop: "10px", }}  >Submit</button>
+        <div
+          onClick={handleSubmit}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginTop: "20px",
+          }}
+        >
+          <button
+            id="submit_Btn"
+            disabled={formState.disabled}
+            style={{
+              backgroundColor: "#007bff",
+              color: "white",
+              padding: "10px 20px",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              marginTop: "10px",
+            }}
+          >
+            Submit
+          </button>
         </div>
-
-
       </div>
-      {showError &&
-        <Toast
-          message="No user, title, description found"
-          duration={2000}
-          onClose={() => setShowError(false)}
-        />
-      }
+      {formState.showError && (
+        <Toast message="No user, title, description found" duration={2000} onClose={() => setFormState({ ...formState, showError: false })} />
+      )}
 
-      {success &&
-        <Toast
-          message="Hey! Data sent"
-          duration={2000}
-          onClose={() => setSuccess(false)}
-        />
-      }
+      {formState.success && (
+        <Toast message="Hey! Data sent" duration={2000} onClose={() => setFormState({ ...formState, success: false })} />
+      )}
 
-      {titleError &&
-        <Toast
-          message="Validation Error: Please enter title"
-          duration={1000}
-          onClose={() => setTitleError(false)}
-        />
-      }
+      {formState.titleError && (
+        <Toast message="Validation Error: Please enter title" duration={1000} onClose={() => setFormState({ ...formState, titleError: false })} />
+      )}
 
-      {descError &&
-        <Toast
-          message="Validation Error: Please enter description"
-          duration={1000}
-          onClose={() => setDescError(false)}
-        />
-      }
+      {formState.descError && (
+        <Toast message="Validation Error: Please enter description" duration={1000} onClose={() => setFormState({ ...formState, descError: false })} />
+      )}
 
-      {menuError &&
-        <Toast
-          message="Validation Error: Please select user"
-          duration={1000}
-          onClose={() => setMenuError(false)}
-        />
-      }
+      {formState.menuError && (
+        <Toast message="Validation Error: Please select user" duration={1000} onClose={() => setFormState({ ...formState, menuError: false })} />
+      )}
 
-      {error &&
-        <Toast
-          message="Something wrong on our end, fixing it!!"
-          duration={1000}
-          onClose={() => setMenuError(false)}
-        />
-      }
+      {formState.error && (
+        <Toast message="Something wrong on our end, fixing it!!" duration={1000} onClose={() => setFormState({ ...formState, error: false })} />
+      )}
 
-      {loading &&
-        <Loading />}
+      {formState.loading && <Loading />}
     </div>
-  )
+  );
 }
